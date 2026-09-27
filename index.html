@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Naqsh-e Jahan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Aref+Ruqaa:wght@400;700&family=Vazirmatn:wght@300;400;600&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --lapis: #0f2b57;
+    --lapis-deep: #081a36;
+    --turq: #3fb0b4;
+    --saffron: #e3aa45;
+    --ivory: #f3e9d2;
+    --brick: #b98a5a;
+    --ink: #0a1223;
+    --veil: rgba(8, 18, 38, 0.72);
+    --panel: rgba(10, 22, 44, 0.66);
+    --line: rgba(227, 170, 69, 0.35);
+    --display: 'Aref Ruqaa', 'Amiri', Georgia, serif;
+    --body: 'Vazirmatn', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--ink); color: var(--ivory); font-family: var(--body); overflow: hidden; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  button, input, select { font: inherit; color: inherit; }
+  button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--saffron); outline-offset: 2px; }
+
+  /* ---------- intro ---------- */
+  #intro {
+    position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(63,176,180,0.18), transparent 60%),
+      linear-gradient(180deg, rgba(8,26,54,0.92), rgba(8,18,38,0.97));
+    transition: opacity 0.9s ease, visibility 0.9s;
+  }
+  #intro.gone { opacity: 0; visibility: hidden; }
+  #intro::before {
+    content: ''; position: absolute; inset: 0; opacity: 0.09; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23e3aa45' stroke-width='1.2'%3E%3Cpath d='M40 4 L49 31 L76 40 L49 49 L40 76 L31 49 L4 40 L31 31 Z'/%3E%3Cpath d='M40 18 L56 24 L62 40 L56 56 L40 62 L24 56 L18 40 L24 24 Z'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .card { position: relative; width: min(620px, 100%); text-align: center; display: grid; gap: 18px; }
+  .card .fa { font-family: var(--display); font-size: clamp(30px, 6vw, 46px); color: var(--saffron); direction: rtl; line-height: 1.2; }
+  .card h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(44px, 9vw, 78px); line-height: 1; letter-spacing: 0.01em; text-wrap: balance; }
+  .card .sub { font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--turq); }
+  .card p { margin: 0 auto; max-width: 52ch; line-height: 1.65; font-weight: 300; color: rgba(243,233,210,0.86); }
+  .keys { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; font-size: 13px; color: rgba(243,233,210,0.75); }
+  .keys b { display: inline-block; min-width: 22px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 4px; font-weight: 600; color: var(--ivory); margin-right: 4px; font-variant-numeric: tabular-nums; }
+  #enter {
+    justify-self: center; position: relative; overflow: hidden; padding: 14px 34px; border-radius: 999px;
+    border: 1px solid var(--saffron); background: linear-gradient(180deg, #1c4a8f, var(--lapis)); cursor: pointer;
+    font-family: var(--display); font-size: 22px; letter-spacing: 0.02em; min-width: 260px;
+  }
+  #enter:disabled { cursor: progress; }
+  #enter:not(:disabled):hover { background: linear-gradient(180deg, #245aa8, #133a73); }
+  #loading { display: grid; gap: 8px; justify-items: center; font-size: 13px; color: rgba(243,233,210,0.7); }
+  #loading.done #load-track { opacity: 0; }
+  #load-track { width: 220px; height: 3px; background: rgba(243,233,210,0.15); border-radius: 2px; overflow: hidden; transition: opacity 0.6s; }
+  #load-bar { height: 100%; width: 0; background: var(--saffron); transition: width 0.3s; }
+  .note { font-size: 12px; color: rgba(243,233,210,0.55); }
+
+  /* ---------- HUD ---------- */
+  .hud { position: fixed; z-index: 5; }
+  #place {
+    top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px; max-width: min(380px, calc(100vw - 200px));
+    padding: 12px 16px 14px; border-left: 2px solid var(--saffron); background: linear-gradient(90deg, var(--panel), transparent);
+    opacity: 0; transform: translateY(-6px); transition: opacity 0.8s, transform 0.8s; pointer-events: none;
+  }
+  #place.show { opacity: 1; transform: none; }
+  #place-fa { font-family: var(--display); font-size: 26px; color: var(--saffron); direction: rtl; text-align: left; line-height: 1.3; }
+  #place-en { font-family: var(--display); font-size: 21px; line-height: 1.2; margin-top: 2px; }
+  #place-note { font-size: 13px; line-height: 1.55; margin-top: 6px; color: rgba(243,233,210,0.85); font-weight: 300; }
+
+  #mapbox { top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px; padding: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+  #minimap { display: block; width: 120px; height: 265px; cursor: crosshair; border-radius: 3px; }
+  #mapbox .n { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: var(--saffron); pointer-events: none; }
+
+  #bar {
+    left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px;
+    width: max-content; max-width: calc(100vw - 32px); padding: 10px 14px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-size: 13px;
+  }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  .seg button { background: none; border: 0; padding: 6px 12px; cursor: pointer; color: rgba(243,233,210,0.8); }
+  .seg button[aria-pressed="true"] { background: var(--saffron); color: var(--ink); font-weight: 600; }
+  .ctl { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .ctl label { color: rgba(243,233,210,0.7); }
+  input[type=range] { accent-color: var(--saffron); width: 110px; }
+  #tod { width: 150px; }
+  #tod-label { font-variant-numeric: tabular-nums; min-width: 42px; }
+  .btn { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+  .btn:hover { border-color: var(--saffron); }
+  #mute[aria-pressed="true"] { background: rgba(227,170,69,0.2); }
+  details.tour { position: relative; }
+  details.tour summary { list-style: none; cursor: pointer; }
+  details.tour summary::-webkit-details-marker { display: none; }
+  #tour {
+    position: absolute; bottom: calc(100% + 14px); left: 50%; transform: translateX(-50%); width: min(320px, 90vw);
+    display: grid; padding: 6px; background: rgba(8,18,38,0.94); border: 1px solid var(--line); border-radius: 10px;
+  }
+  .tour-item { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: baseline; text-align: left; background: none; border: 0; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+  .tour-item:hover { background: rgba(63,176,180,0.18); }
+  .tour-item .k { color: var(--saffron); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tour-item .fa { font-family: var(--display); color: rgba(243,233,210,0.6); direction: rtl; }
+  #hint { position: fixed; z-index: 5; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); font-size: 12px; color: rgba(243,233,210,0.65); text-shadow: 0 1px 3px #000; white-space: nowrap; pointer-events: none; }
+  #cross { position: fixed; z-index: 4; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: rgba(243,233,210,0.8); opacity: 0; pointer-events: none; }
+  body.locked #cross { opacity: 1; }
+
+  @media (max-width: 720px) {
+    #minimap { width: 76px; height: 168px; }
+    #place { max-width: calc(100vw - 130px); padding: 8px 10px; }
+    #place-fa { font-size: 20px; } #place-en { font-size: 17px; } #place-note { font-size: 12px; }
+    #bar { gap: 8px 10px; padding: 8px 10px; }
+    .ctl.vol { display: none; }
+    #tod { width: 110px; }
+    #hint { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #place, #intro { transition: none; }
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="scene" aria-label="3D view of Naqsh-e Jahan Square"></canvas>
+<div id="cross"></div>
+
+<div id="intro">
+  <div class="card">
+    <div class="fa">میدان نقش جهان</div>
+    <h1>Naqsh-e Jahān</h1>
+    <div class="sub">Isfahan · 1598–1629</div>
+    <p>Walk the royal square of Shah Abbas: the Shah Mosque, the Sheikh Lotfollah Mosque, the talar of Ali Qapu and the gate of the bazaar. Every tile and every note is generated as you arrive.</p>
+    <div class="keys">
+      <span><b>W A S D</b>walk</span><span><b>Shift</b>run</span><span><b>V</b>walk / fly / aerial</span><span><b>1–0</b>tour</span><span><b>T</b>time</span><span><b>C</b>clap</span><span><b>M</b>mute</span>
+    </div>
+    <div id="loading"><div id="load-track"><div id="load-bar"></div></div><span id="load-msg">Preparing…</span></div>
+    <button id="enter" disabled>Enter the Maydan</button>
+    <div class="note">Headphones recommended. Music and ambience change from place to place.</div>
+  </div>
+</div>
+
+<div id="place" class="hud" aria-live="polite">
+  <div id="place-fa"></div>
+  <div id="place-en"></div>
+  <div id="place-note"></div>
+</div>
+
+<div id="mapbox" class="hud"><span class="n">N</span><canvas id="minimap" width="240" height="530" aria-label="Plan of the square; click to go there"></canvas></div>
+
+<div id="hint">Click to look · WASD walk · Shift run · C clap</div>
+<div id="bar" class="hud">
+  <div class="seg" role="group" aria-label="Movement">
+    <button data-mode="walk" aria-pressed="true">Walk</button>
+    <button data-mode="fly" aria-pressed="false">Fly</button>
+    <button data-mode="orbit" aria-pressed="false">Aerial</button>
+  </div>
+  <details class="tour">
+    <summary class="btn">Places</summary>
+    <div id="tour"></div>
+  </details>
+  <div class="ctl"><label for="tod">Time</label><input id="tod" type="range" min="5" max="23.5" step="0.05" value="17.4"><span id="tod-label">17:24</span></div>
+  <div class="ctl vol"><label for="music-vol">Music</label><input id="music-vol" type="range" min="0" max="1.2" step="0.01" value="0.8"></div>
+  <div class="ctl vol"><label for="amb-vol">Ambience</label><input id="amb-vol" type="range" min="0" max="1.2" step="0.01" value="0.9"></div>
+  <button id="naqqareh" class="btn" title="Sunset drums from the naqqareh-khaneh (N)">Naqqāreh</button>
+  <button id="mute" class="btn" aria-pressed="false" title="Mute (M)">Mute</button>
+</div>
+
+<script>
+  // show load failures on the intro card instead of failing silently
+  const showErr = (m) => { const el = document.getElementById('load-msg'); if (el) el.textContent = 'Could not start: ' + m; };
+  window.addEventListener('error', (e) => showErr(e.message || 'script error'));
+  window.addEventListener('unhandledrejection', (e) => showErr((e.reason && e.reason.message) || String(e.reason)));
+</script>
+<script type="module" src="./src/main.js" onerror="showErr('could not load src/main.js')"></script>
+</body>
+</html>
